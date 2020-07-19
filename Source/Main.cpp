@@ -1,39 +1,5 @@
 ﻿#include "Tetris.hpp"
 
-#define LEFT 75
-#define RIGHT 77
-#define UP 72
-#define DOWN 80
-#define ESC 27
-#define BX 5
-#define BY 1
-#define BW 10
-#define BH 20
-#define PGUP 73
-#define PGDN 81
-#define HOLD 104
-#define DO_SUFFLE -1
-
-
-void DrawScreen();
-void DrawBoard();
-BOOL ProcessKey();
-void PrintBrick(BOOL Show);
-int GetAround(int x, int y, int b, int r);
-int GetAroundSpin(int x, int y, int b, int r, int* xx, int* yy);
-BOOL MoveDown();
-void TestFull();
-void DrawNext();
-void PrintInfo();
-void HoldBrick();
-void HoldScreen();
-__inline void swap(int *a, int *b) {int temp = *a;*a = *b;*b = temp;}
-void Shuffle();
-int GetNextBrick(int previousBrick);
-
-struct Point {
-	int x, y;
-};
 struct Point Shape[][4][4] = {     //Shape[벽돌모양][벽돌의회전][x,y좌표값]
 	{ {0,0,1,0,2,0,-1,0}, {0,0,0,1,0,-1,0,-2}, {0,0,1,0,2,0,-1,0}, {0,0,0,1,0,-1,0,-2} },
 	{ {0,0,1,0,0,1,1,1}, {0,0,1,0,0,1,1,1}, {0,0,1,0,0,1,1,1}, {0,0,1,0,0,1,1,1} },
@@ -42,18 +8,16 @@ struct Point Shape[][4][4] = {     //Shape[벽돌모양][벽돌의회전][x,y좌
 	{ {0,0,-1,0,1,0,-1,-1}, {0,0,0,-1,0,1,-1,1}, {0,0,-1,0,1,0,1,1}, {0,0,0,-1,0,1,1,-1} },
 	{ {0,0,1,0,-1,0,1,-1}, {0,0,0,1,0,-1,-1,-1}, {0,0,1,0,-1,0,-1,1}, {0,0,0,-1,0,1,1,1} },
 	{ {0,0,-1,0,1,0,0,1}, {0,0,0,-1,0,1,1,0}, {0,0,-1,0,1,0,0,-1}, {0,0,-1,0,0,-1,0,1} },
-
 };         //구조체 3차원 배열으로 벽돌모양을 표현한다
 
-enum { EMPTY, BRICK, WALL };
 char *arTile[][3] = {             //테트리스의 모양을 바꿔준다
-	 {". ","■","□"},
+	 {"[]","■","□"},
 	 {"  ","■","□"},
 	 {"  ","##","II"},
 	 {"  ","●","▣"},
 };
 
-int spinCenter[][2] = {
+int spinCenter[10][2] = {
 	{0, 0},{1, 0},{-1, 0},
 	{0, 1},{1, 1},{-1, 1},
 	{0, 2},{1, 2},{-1, 2},
@@ -112,8 +76,8 @@ void main()
 			nbrick = GetNextBrick(nbrick);
 			DrawNext();
 
-			nx = BW / 2;      //nx,ny는 떨어지고있는 벽돌의 좌표값
-			ny = 3;
+			nx = START_X;      //nx,ny는 떨어지고있는 벽돌의 좌표값
+			ny = START_Y;
 			rot = 0;
 			PrintBrick(TRUE);
 
@@ -292,8 +256,8 @@ void PrintBrick(BOOL Show)     //벽돌을 출력하거나 삭제하는데 이�
 	}
 }
 
-int GetAround(int x, int y, int b, int r)   //벽돌 주면에 무엇이 있는지 검사하여 벽돌의 이동 및 회전가능성 조사
-{                                       //이동중인 벽돌의 주변을 조사하는 것이 아니므로 인수로 전달된 위치의 벽돌모양을 참조한다
+int GetAround(int x, int y, int b, int r)
+{
 	int i, k = EMPTY;
 
 	for (i = 0; i < 4; i++) {
@@ -304,14 +268,10 @@ int GetAround(int x, int y, int b, int r)   //벽돌 주면에 무엇이 있는�
 
 int GetAroundSpin(int x, int y, int b, int r, int* retx, int* rety)
 {
-	int i;
 	for (int j = 0; j < 10; j++) {
-		int k = EMPTY;
 		int xx = spinCenter[j][0] + x;
 		int yy = spinCenter[j][1] + y;
-		for (i = 0; i < 4; i++)
-			k = max(k, board[xx + Shape[b][r][i].x][yy + Shape[b][r][i].y]);
-		if (k == EMPTY) {
+		if (GetAround(x + xx, y + yy, b, r) == EMPTY) {
 			*retx = xx;
 			*rety = yy;
 			return EMPTY;
@@ -322,7 +282,7 @@ int GetAroundSpin(int x, int y, int b, int r, int* retx, int* rety)
 
 BOOL MoveDown()   //벽돌을 한칸 아래로 이동시킨다.
 {
-	if (GetAround(nx, ny + 1, brick, rot) != EMPTY) {
+	if (GetAround(nx, ny + 1, brick, rot) != 0) {
 		if (DropTime + CLOCKS_PER_SEC / 2 >= clock())
 			return FALSE;
 		HoldTrig = 1;
@@ -456,4 +416,59 @@ int GetNextBrick(int previousBrick) {
 	int i = 0;
 	while (box[i++] != previousBrick);
 	return box[i];
+}
+
+// 화면을 모두 지운다.
+void clrscr()
+{
+	system("cls");
+}
+
+// 커서를 x,y좌표로 이동시킨다.
+void gotoxy(int x, int y)
+{
+	COORD Cur;
+	Cur.X = x;
+	Cur.Y = y;
+	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Cur);
+}
+
+// 커서의 x 좌표를 조사한다.
+int wherex()
+{
+	CONSOLE_SCREEN_BUFFER_INFO BufInfo;
+
+	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &BufInfo);
+	return BufInfo.dwCursorPosition.X;
+}
+
+// 커서의 y좌표를 조사한다.
+int wherey()
+{
+	CONSOLE_SCREEN_BUFFER_INFO BufInfo;
+
+	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &BufInfo);
+	return BufInfo.dwCursorPosition.Y;
+}
+
+// 커서를 숨기거나 다시 표시한다.
+void setcursortype(CURSOR_TYPE c)
+{
+	CONSOLE_CURSOR_INFO CurInfo;
+
+	switch (c) {
+	case NOCURSOR:
+		CurInfo.dwSize = 1;
+		CurInfo.bVisible = FALSE;
+		break;
+	case SOLIDCURSOR:
+		CurInfo.dwSize = 100;
+		CurInfo.bVisible = TRUE;
+		break;
+	case NORMALCURSOR:
+		CurInfo.dwSize = 20;
+		CurInfo.bVisible = TRUE;
+		break;
+	}
+	SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &CurInfo);
 }
