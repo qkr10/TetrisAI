@@ -16,5 +16,9 @@
 
 
 ### 2020-07-25
-모양값을 Shape 전역변수가 아닌 Shape 클래스로 관리하게 함
-readme.md 생성
+1. 완료
+    1. 모양마다의 좌표값 4개씩을 Shape 전역변수가 아닌 Shape 클래스로 관리
+    1. readme.md 생성
+    1. Input class, InputKind enum 정의
+1. 진행중
+    1. Output class 정의
