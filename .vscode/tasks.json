@@ -12,7 +12,7 @@
 				"$msCompile"
 			],
 			"group": {
-				"kind" : "test",
+				"kind": "test",
 				"isDefault": true
 			}
 		},
@@ -24,10 +24,11 @@
 				"/Zi",
 				"/EHsc",
 				"/Fe:",
-				"Exe\\${fileBasenameNoExtension}.exe",
+				"Exe\\Main.exe",
 				"/Fo:",
-				"Obj\\${fileBasename}.obj",
-				"${file}"
+				"Obj\\",
+				"/std:c++17",
+				"Source\\*.cpp"
 			],
 			"options": {
 				"cwd": "${workspaceFolder}"
@@ -39,7 +40,7 @@
 				"$msCompile"
 			],
 			"group": {
-				"kind" : "build",
+				"kind": "build",
 				"isDefault": true
 			}
 		},
@@ -50,7 +51,9 @@
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
-			"problemMatcher": ["$msCompile"]
+			"problemMatcher": [
+				"$msCompile"
+			]
 		}
 	]
 }

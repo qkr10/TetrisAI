@@ -1,14 +1,11 @@
-﻿#include "Tetris.hpp"
-
-struct Point Shape[][4][4] = {     //Shape[벽돌모양][벽돌의회전][x,y좌표값]
-	{ {0,0,1,0,2,0,-1,0}, {0,0,0,1,0,-1,0,-2}, {0,0,1,0,2,0,-1,0}, {0,0,0,1,0,-1,0,-2} },
-	{ {0,0,1,0,0,1,1,1}, {0,0,1,0,0,1,1,1}, {0,0,1,0,0,1,1,1}, {0,0,1,0,0,1,1,1} },
-	{ {0,0,-1,0,0,-1,1,-1}, {0,0,0,1,-1,0,-1,-1}, {0,0,-1,0,0,-1,1,-1}, {0,0,0,1,-1,0,-1,-1} },
-	{ {0,0,-1,-1,0,-1,1,0}, {0,0,-1,0,-1,1,0,-1}, {0,0,-1,-1,0,-1,1,0}, {0,0,-1,0,-1,1,0,-1} },
-	{ {0,0,-1,0,1,0,-1,-1}, {0,0,0,-1,0,1,-1,1}, {0,0,-1,0,1,0,1,1}, {0,0,0,-1,0,1,1,-1} },
-	{ {0,0,1,0,-1,0,1,-1}, {0,0,0,1,0,-1,-1,-1}, {0,0,1,0,-1,0,-1,1}, {0,0,0,-1,0,1,1,1} },
-	{ {0,0,-1,0,1,0,0,1}, {0,0,0,-1,0,1,1,0}, {0,0,-1,0,1,0,0,-1}, {0,0,-1,0,0,-1,0,1} },
-};         //구조체 3차원 배열으로 벽돌모양을 표현한다
+﻿#include <cstdio>
+#include <cstdlib>
+#include <ctime>
+#include <conio.h>
+#include <windows.h>
+#include "Main.hpp"
+#include "BlockState.hpp"
+#include "Shape.hpp"
 
 char *arTile[][3] = {             //테트리스의 모양을 바꿔준다
 	 {"[]","■","□"},
@@ -17,7 +14,7 @@ char *arTile[][3] = {             //테트리스의 모양을 바꿔준다
 	 {"  ","●","▣"},
 };
 
-int spinCenter[10][2] = {
+Point spinCenter[10] = {
 	{0, 0},{1, 0},{-1, 0},
 	{0, 1},{1, 1},{-1, 1},
 	{0, 2},{1, 2},{-1, 2},
@@ -27,8 +24,7 @@ int spinCenter[10][2] = {
 int box[] = { 0, 1, 2, 3, 4, 5, 6 };
 
 int board[BW + 2][BH + 2];
-int nx, ny;
-int brick, rot;
+BlockState curState;
 int ttype = 0;
 int nbrick;
 int score;
@@ -72,16 +68,13 @@ void main()
 		nbrick = GetNextBrick(nbrick);
 		for (; 1;) {
 			bricknum++;
-			brick = nbrick;
+			curState = {{START_X, START_Y}, 0, nbrick};
 			nbrick = GetNextBrick(nbrick);
 			DrawNext();
-
-			nx = START_X;      //nx,ny는 떨어지고있는 벽돌의 좌표값
-			ny = START_Y;
-			rot = 0;
+			
 			PrintBrick(TRUE);
 
-			if (GetAround(nx, ny, brick, rot) != EMPTY) break;
+			if (curState.GetAround() != EMPTY) break;
 			nStay = nFrame;
 			for (; 2;) {
 				if (--nStay == 0) {
@@ -140,9 +133,28 @@ void DrawBoard()         //게임판을 그림(외부벽과 문자열 빼고 쌓
 
 BOOL ProcessKey()          // 키입력을 처리하는데 main함수의 부담을 덜어주기 위해 별도의 함수로 분리
 {                          // 이동중인 벽돌이 바닥에 닿으면 TRUE를 리턴
-	int ch, trot;
-	int xx, yy;
+	int ch;
 	int ret = FALSE;
+	BlockState newState(curState);
+
+	auto MoveFn = [&](Point move){
+		newState = newState + (BlockState)move;
+		if (newState.GetAround() == EMPTY) {
+			PrintBrick(FALSE);
+			curState = newState;
+			PrintBrick(TRUE);
+			DropTime = clock();
+		}
+	};
+	auto RotFn = [&](BlockState rot){
+		newState = newState + (BlockState)rot;
+		if (newState.GetAroundSpin(newState.pos) == EMPTY) {
+			PrintBrick(FALSE);
+			curState = newState;
+			PrintBrick(TRUE);
+			DropTime = clock();
+		}
+	};
 
 	if (kbhit()) {
 		ch = getch();
@@ -150,29 +162,13 @@ BOOL ProcessKey()          // 키입력을 처리하는데 main함수의 부담�
 			ch = getch();
 			switch (ch) {
 			case LEFT:
-				if (GetAround(nx - 1, ny, brick, rot) == EMPTY) {
-					PrintBrick(FALSE);
-					nx--;
-					PrintBrick(TRUE);
-					DropTime = clock();
-				}
+				MoveFn(Point(-1, 0));
 				break;
 			case RIGHT:
-				if (GetAround(nx + 1, ny, brick, rot) == EMPTY) {
-					PrintBrick(FALSE);
-					nx++;
-					PrintBrick(TRUE);
-					DropTime = clock();
-				}
+				MoveFn(Point(1, 0));
 				break;
 			case UP:
-				trot = (rot == 3 ? 0 : rot + 1);
-				if (GetAround(nx, ny, brick, trot) == EMPTY) {
-					PrintBrick(FALSE);
-					rot = trot;
-					PrintBrick(TRUE);
-					DropTime = clock();
-				}
+				RotFn(BlockState({0, 0}, 1, 0));
 				break;
 			case DOWN:
 				ret = MoveDown();
@@ -206,26 +202,10 @@ BOOL ProcessKey()          // 키입력을 처리하는데 main함수의 부담�
 				PrintBrick(TRUE);
 				break;
 			case 'z':
-				trot = (rot == 3 ? 0 : rot + 1);
-				if (GetAroundSpin(nx, ny, brick, trot, &xx, &yy) == EMPTY) {
-					PrintBrick(FALSE);
-					rot = trot;
-					nx = xx;
-					ny = yy;
-					PrintBrick(TRUE);
-					DropTime = clock();
-				}
+				RotFn(BlockState({0, 0}, 1, 0));
 				break;
 			case 'x':
-				trot = (rot == 0 ? 3 : rot - 1);
-				if (GetAroundSpin(nx, ny, brick, trot, &xx, &yy) == EMPTY) {
-					PrintBrick(FALSE);
-					rot = trot;
-					nx = xx;
-					ny = yy;
-					PrintBrick(TRUE);
-					DropTime = clock();
-				}
+				RotFn(BlockState({0, 0}, -1, 0));
 				break;
 			case ' ':
 				while (MoveDown() == FALSE) { ; }
@@ -251,38 +231,15 @@ BOOL ProcessKey()          // 키입력을 처리하는데 main함수의 부담�
 void PrintBrick(BOOL Show)     //벽돌을 출력하거나 삭제하는데 이동중인 벽돌을 대상로 하므로 전역변수 brick,rot,nx,ny값 참조
 {
 	for (int i = 0; i < 4; i++) {
-		gotoxy(BX + (Shape[brick][rot][i].x + nx) * 2, BY + Shape[brick][rot][i].y + ny);
+		gotoxy(Shape::GetBoardPos(i));
 		puts(arTile[ttype][Show ? BRICK : EMPTY]);
 	}
 }
 
-int GetAround(int x, int y, int b, int r)
-{
-	int i, k = EMPTY;
-
-	for (i = 0; i < 4; i++) {
-		k = max(k, board[x + Shape[b][r][i].x][y + Shape[b][r][i].y]);
-	}
-	return k;
-}
-
-int GetAroundSpin(int x, int y, int b, int r, int* retx, int* rety)
-{
-	for (int j = 0; j < 10; j++) {
-		int xx = spinCenter[j][0] + x;
-		int yy = spinCenter[j][1] + y;
-		if (GetAround(x + xx, y + yy, b, r) == EMPTY) {
-			*retx = xx;
-			*rety = yy;
-			return EMPTY;
-		}
-	}
-	return !EMPTY;
-}
-
 BOOL MoveDown()   //벽돌을 한칸 아래로 이동시킨다.
 {
-	if (GetAround(nx, ny + 1, brick, rot) != 0) {
+	BlockState newState = curState + BlockState({0, 1}, 0, 0);
+	if (newState.GetAround() != 0) {
 		if (DropTime + CLOCKS_PER_SEC / 2 >= clock())
 			return FALSE;
 		HoldTrig = 1;
@@ -290,7 +247,7 @@ BOOL MoveDown()   //벽돌을 한칸 아래로 이동시킨다.
 		return TRUE;//바닥에 닿았다면 TestFull() 한 후 TRUE를 리턴한다.
 	}
 	PrintBrick(FALSE);
-	ny++;
+	curState = newState;
 	DropTime = clock();
 	PrintBrick(TRUE);
 	return FALSE;
@@ -303,7 +260,7 @@ void TestFull()              //수평으로 다 채워진 줄을 찾아 삭제�
 	static int arScoreInc[] = { 0,1,3,8,20 };
 
 	for (i = 0; i < 4; i++) {
-		board[nx + Shape[brick][rot][i].x][ny + Shape[brick][rot][i].y] = BRICK;
+		board[Shape::GetPos(i).x][Shape::GetPos(i).y] = BRICK;
 	}
 
 	for (y = 1; y < BH + 1; y++) {
@@ -338,10 +295,11 @@ void DrawNext() //다음 블럭 보기
 	}
 
 	for (i = 0; i < 4; i++) {
-		gotoxy(40 + (Shape[nbrick][0][i].x) * 2, 15 + Shape[nbrick][0][i].y);
+		gotoxy(Shape::GetNextPos(i));
 		puts(arTile[ttype][BRICK]);
 	}
 }
+
 void PrintInfo()          //점수와 벽돌의갯수를 나타내는 함수
 {
 	gotoxy(50, 9); printf("점수 : %d     ", score);
@@ -353,30 +311,18 @@ void HoldBrick() { //블럭을 홀드한다
 	HoldTrig = 0;
 	if (hbrick == 8)
 	{
-		hbrick = brick;
-		brick = nbrick;
+		hbrick = curState.index;
+		curState.index = nbrick;
 		nbrick = GetNextBrick(nbrick);
-
-		nx = BW / 2;
-		ny = 3;
-		for (i = 0; i < 4; i++) {
-			gotoxy(BX + (Shape[brick][rot][i].x + nx) * 2, BY + Shape[brick][rot][i].y + ny);
-			puts(arTile[ttype][BRICK]);
-		}
 	}
 	else
 	{
-		temp = brick;
-		brick = hbrick;
+		temp = curState.index;
+		curState.index = hbrick;
 		hbrick = temp;
-
-		nx = BW / 2;
-		ny = 3;
-		for (i = 0; i < 4; i++) {
-			gotoxy(BX + (Shape[brick][rot][i].x + nx) * 2, BY + Shape[brick][rot][i].y + ny);
-			puts(arTile[ttype][BRICK]);
-		}
 	}
+	curState.pos = Point(BW / 2, 3);
+	PrintBrick(true);
 }
 
 void HoldScreen() {        //화면에 보여짐
@@ -386,17 +332,15 @@ void HoldScreen() {        //화면에 보여짐
 		for (y = 12; y <= 18; y++) {
 			gotoxy(x, y);
 			puts(arTile[ttype][(x == 50 || x == 60 || y == 12 || y == 18) ? WALL : EMPTY]);
-
 		}
 	}
 
 	if (hbrick != 8) {
 		for (i = 0; i < 4; i++) {
-			gotoxy(54 + (Shape[hbrick][0][i].x) * 2, 15 + Shape[hbrick][0][i].y);
+			gotoxy(Shape::GetHoldPos(i));
 			puts(arTile[ttype][BRICK]);
 		}
 	}
-
 }
 
 void Shuffle() {
@@ -427,9 +371,12 @@ void clrscr()
 // 커서를 x,y좌표로 이동시킨다.
 void gotoxy(int x, int y)
 {
-	COORD Cur;
-	Cur.X = x;
-	Cur.Y = y;
+	COORD Cur = {(short)x, (short)y};
+	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Cur);
+}
+void gotoxy(Point p)
+{
+	COORD Cur = {(short)p.x, (short)p.y};
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Cur);
 }
 
