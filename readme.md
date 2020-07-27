@@ -17,6 +17,13 @@
 
 <hr>
 
+### 2020-07-28
+1. 완료
+    1. Main.cpp 의 함수를 모아 Tetris 클래스 만듬(main()은 제외)
+    1. Shape 클래스를 BlockState 클래스로 병합
+1. 진행중
+    1. TetrisAI 클래스와 Tetris 클래스 연결
+
 ### 2020-07-27
 1. 완료
     1. Output class에 모든 출력관련 코드 옮김
