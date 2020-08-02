@@ -3,12 +3,15 @@
 #include "Point.hpp"
 #include "BlockState.hpp"
 #include "Tetris.hpp"
+#include <string>
+#include <fstream>
 
 class Output
 {
 public:
     static char* arTile[4][3];
     static int ttype;
+    static std::ofstream consoleOut;
     
     static void SetCursorType(int c);
     static void gotoxy(Point p);
@@ -29,4 +32,8 @@ public:
     static void DrawPause();
     static void DrawEnd();
     static void Clear();
+    static void ConsoleOutInit();
 };
+
+std::ostream &operator<<(std::ostream& os, BlockState s);
+std::ostream &operator<<(std::ostream& os, Point s);

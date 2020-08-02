@@ -3,6 +3,8 @@
 #include <windows.h>
 #include <conio.h>
 #include <cstdio>
+#include <fstream>
+#include <string>
 
 char* Output::arTile[4][3] = {
 	{"  ", "■",  "□"},
@@ -12,6 +14,8 @@ char* Output::arTile[4][3] = {
 };
 
 int Output::ttype = 0;
+
+std::ofstream Output::consoleOut("console.txt");
 
 void Output::SetCursorType(int c)
 {
@@ -159,4 +163,16 @@ void Output::DrawEnd()
 void Output::Clear()
 {
     system("cls");
+}
+
+std::ostream &operator<<(std::ostream& os, BlockState s)
+{
+	os << s.pos << ' ' << s.rot << ' ' << s.index;
+	return os;
+}
+
+std::ostream &operator<<(std::ostream& os, Point p)
+{
+	os << p.x << ' ' << p.y;
+	return os;
 }

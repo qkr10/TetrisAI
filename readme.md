@@ -17,6 +17,13 @@
 
 <hr>
 
+### 2020-08-01
+1. 완료
+    1. Output 클래스에 파일 출력 기능 추가(디버그용)
+        1. static std::ofstream Output::consoleOut
+1. 진행중
+    1. TetrisAI 클래스를 연결중 오류 수정
+
 ### 2020-07-28
 1. 완료
     1. Main.cpp 의 함수를 모아 Tetris 클래스 만듬(main()은 제외)

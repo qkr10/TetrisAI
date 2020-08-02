@@ -10,7 +10,7 @@ private:
     int box[7] = { 0, 1, 2, 3, 4, 5, 6 };
 public:
     int board[BW + 2][BH + 2];
-    //TetrisAI ai;
+    TetrisAI ai;
     BlockState curState;
     int nbrick;
     int infoScore;

@@ -50,14 +50,14 @@ void Tetris::ProcessTimer()
 	int moveDown = moveDownTime;
 	int aiMove = aiMoveTime;
 	while (true) {
-		if (--moveDown == 0) {
-			moveDown = moveDownTime;
-			if (MoveDown()) break;
-		}
-		// if (--aiMove == 0) {
-		// 	aiMove = aiMoveTime;
-		// 	AINextStep();
+		// if (--moveDown == 0) {
+		// 	moveDown = moveDownTime;
+		// 	if (MoveDown()) break;
 		// }
+		if (--aiMove == 0) {
+			aiMove = aiMoveTime;
+			AINextStep();
+		}
 		if (ProcessKey()) break;
 		delay(1000 / 20);
 	}
@@ -140,34 +140,34 @@ bool Tetris::ProcessKey()          // 키입력을 처리하는데 main함수의
 	return ret;
 }
 
-// void Tetris::AINextStep()
-// {
-// 	BlockState nextState = ai.GetNextStep();
-// 	BlockState diffState = nextState - curState;
-// 	if (diffState.x == 1)
-// 		Input::next = InputEnum::KEYRIGHT;
-// 	else if (diffState.x == -1)
-// 		Input::next = InputEnum::KEYLEFT;
-// 	else if (diffState.y == 1)
-// 		Input::next = InputEnum::KEYDOWN;
-// 	else if (diffState.rot == -1)
-// 		Input::next = InputEnum::KEYLEFTROT;
-// 	else if (diffState.rot == 1)
-// 		Input::next = InputEnum::KEYRIGHTROT;
-// 	else if (diffState.index != 0)
-// 		Input::next = InputEnum::KEYHOLD;
-// }
+void Tetris::AINextStep()
+{
+	BlockState nextState = ai.GetNextStep();
+	BlockState diffState = nextState - curState;
+	if (diffState.x == 1)
+		Input::next = InputEnum::KEYRIGHT;
+	else if (diffState.x == -1)
+		Input::next = InputEnum::KEYLEFT;
+	else if (diffState.y == 1)
+		Input::next = InputEnum::KEYDOWN;
+	else if (diffState.rot == -1)
+		Input::next = InputEnum::KEYLEFTROT;
+	else if (diffState.rot == 1)
+		Input::next = InputEnum::KEYRIGHTROT;
+	else if (diffState.index != 0)
+		Input::next = InputEnum::KEYHOLD;
+}
 
-// void Tetris::AIInformState()
-// {
-// 	for (int x = 0; x < BW; x++)
-// 	for (int y = 0; y < BW; y++)
-// 		ai.board[x][y] = board[x + 1][y + 1];
+void Tetris::AIInformState()
+{
+	for (int x = 0; x < BW+2; x++)
+	for (int y = 0; y < BW+2; y++)
+		ai.board[x][y] = board[x][y];
 
-// 	if (ai.blocksShapeIndex.size() == 0)
-// 		ai.blocksShapeIndex.push_back(0);
-// 	ai.blocksShapeIndex[0] = curState.index;
-// }
+	if (ai.blocksShapeIndex.size() == 0)
+		ai.blocksShapeIndex.push_back(0);
+	ai.blocksShapeIndex[0] = curState.index;
+}
 
 bool Tetris::MoveDown()   //벽돌을 한칸 아래로 이동시킨다.
 {
@@ -240,7 +240,7 @@ void Tetris::NewBrick()
 	infoBrickNum++;
 	curState = {{START_X, START_Y}, 0, nbrick};
 	nbrick = GetNextBrick();
-	//AIInformState();
+	AIInformState();
 }
 
 void Tetris::Shuffle()

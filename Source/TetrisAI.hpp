@@ -17,7 +17,7 @@ class TetrisAI
 private:
     bool GetPathFromVisit(vvvi& visit, BlockState startPos, BlockState dest);
     bool CalcPath(BlockState state, int mode = 0);
-    BlockState CalcBestState(); //못찾을시 {{-1, -1}, -1} 반환
+    BlockState CalcBestState(); //못찾을시 {{-1, -1}, -1, -1} 반환
     void CalcSteps();
 
     int currentStepIndex = 0;

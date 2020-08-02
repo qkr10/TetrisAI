@@ -52,11 +52,18 @@ bool BlockState::operator< (const BlockState b) const
 	return x < b.x;
 }
 
+bool BlockState::CheckBoardBoundary(Point p)
+{
+	return 0 < p.x && p.x < 11 && 0 < p.y && p.y < 21;
+}
+
 int BlockState::GetAround(int (* board)[BH + 2])
 {
 	int k = EMPTY;
-	for (int i = 0; i < 4; i++)
+	for (int i = 0; i < 4; i++){
+		if (CheckBoardBoundary(GetPos(i))) continue;
 		k = std::max(k, board[GetPos(i).x][GetPos(i).y]);
+	}
 	return k;
 }
 

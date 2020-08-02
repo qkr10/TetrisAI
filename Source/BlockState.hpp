@@ -21,6 +21,7 @@ public:
     BlockState operator-(const BlockState& b);
     bool operator< (const BlockState b) const;
 
+    bool CheckBoardBoundary(Point p);
     // 벽돌의 이동/회전 가능성 조사(O : EMPTY, X : BRICK)
     // x, y, b, r = 블럭상태(위치, 블럭종류, 회전한횟수)
     // 회전이 불가능할때는 블럭이 이동할수 있으므로 GetAroundSpin써야함
