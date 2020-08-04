@@ -2,15 +2,17 @@
 #include <conio.h>
 #include <Windows.h> //tolower()
 
-InputEnum Input::next = InputEnum::NOINPUT;
+InputEnum Input::nextAIInput = InputEnum::NOINPUT;
+
+InputEnum Input::GetAIInput()
+{
+	auto ret = nextAIInput;
+	nextAIInput = InputEnum::NOINPUT;
+	return ret;
+}
 
 InputEnum Input::GetInput()
 {
-	if (next != InputEnum::NOINPUT){
-		auto ret = next;
-		next = InputEnum::NOINPUT;
-		return ret;
-	}
 	if (kbhit()) {
 		int ch = _getch();
 		if (ch == 0xE0 || ch == 0) {

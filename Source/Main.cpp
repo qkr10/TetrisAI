@@ -59,7 +59,7 @@ void Tetris::ProcessTimer()
 			AINextStep();
 		}
 		if (ProcessKey()) break;
-		delay(1000 / 20);
+		delay(50);
 	}
 }
 
@@ -75,20 +75,20 @@ bool Tetris::ProcessKey()          // 키입력을 처리하는데 main함수의
 			Output::DrawBlock(curState, FALSE);
 			curState = newState;
 			Output::DrawBlock(curState, TRUE);
-			DropTime = clock();
+			//DropTime = clock();
 		}
 	};
 	auto RotFn = [&](BlockState rot){
 		newState = newState + (BlockState)rot;
-		if (newState.GetAroundSpin(board, newState.pos) == EMPTY) {
+		if (newState.GetAroundSpin(board, newState) == EMPTY) {
 			Output::DrawBlock(curState, FALSE);
 			curState = newState;
 			Output::DrawBlock(curState, TRUE);
-			DropTime = clock();
+			//DropTime = clock();
 		}
 	};
 
-	switch (Input::GetInput())
+	switch (Input::GetAIInput())
 	{
 	case InputEnum::KEYUP:
 		RotFn(BlockState({0, 0}, 1, 0));
@@ -114,7 +114,7 @@ bool Tetris::ProcessKey()          // 키입력을 처리하는데 main함수의
 		break;
 	case InputEnum::KEYDROP:
 		while (MoveDown() == FALSE) ;
-		return true;
+		ret = true;
 		break;
 	case InputEnum::KEYESC:
 		exit(0);
@@ -142,27 +142,46 @@ bool Tetris::ProcessKey()          // 키입력을 처리하는데 main함수의
 
 void Tetris::AINextStep()
 {
+	if (Input::nextAIInput != InputEnum::NOINPUT)
+		return;
+
 	BlockState nextState = ai.GetNextStep();
+
+	Output::consoleOut << "ai next step" << std::endl;
+	Output::consoleOut << "\tnext state : " << nextState << std::endl;
+	Output::consoleOut << "\tcurrent state : " << curState << std::endl;
+
+	if (nextState.index == -1)
+		Input::nextAIInput = InputEnum::KEYHOLD;
+	else if (nextState.index == -2)
+		Input::nextAIInput = InputEnum::KEYDROP;
+
+	if (Input::nextAIInput != InputEnum::NOINPUT)
+		return;
+
 	BlockState diffState = nextState - curState;
+
 	if (diffState.x == 1)
-		Input::next = InputEnum::KEYRIGHT;
+		Input::nextAIInput = InputEnum::KEYRIGHT;
 	else if (diffState.x == -1)
-		Input::next = InputEnum::KEYLEFT;
+		Input::nextAIInput = InputEnum::KEYLEFT;
 	else if (diffState.y == 1)
-		Input::next = InputEnum::KEYDOWN;
-	else if (diffState.rot == -1)
-		Input::next = InputEnum::KEYLEFTROT;
+		Input::nextAIInput = InputEnum::KEYDOWN;
 	else if (diffState.rot == 1)
-		Input::next = InputEnum::KEYRIGHTROT;
-	else if (diffState.index != 0)
-		Input::next = InputEnum::KEYHOLD;
+		Input::nextAIInput = InputEnum::KEYLEFTROT;
+	else if (diffState.rot == 3)
+		Input::nextAIInput = InputEnum::KEYRIGHTROT;
 }
 
 void Tetris::AIInformState()
 {
-	for (int x = 0; x < BW+2; x++)
-	for (int y = 0; y < BW+2; y++)
-		ai.board[x][y] = board[x][y];
+	for (int y = 0; y < BH + 2; y++){
+		for (int x = 0; x < BW + 2; x++){
+			ai.board[x][y] = board[x][y];
+			Output::consoleOut << board[x][y];
+		}
+		Output::consoleOut << std::endl;
+	}
 
 	if (ai.blocksShapeIndex.size() == 0)
 		ai.blocksShapeIndex.push_back(0);
@@ -172,16 +191,24 @@ void Tetris::AIInformState()
 bool Tetris::MoveDown()   //벽돌을 한칸 아래로 이동시킨다.
 {
 	BlockState newState = curState + BlockState({0, 1}, 0, 0);
-	if (newState.GetAround(board) != 0) {
-		if (DropTime + CLOCKS_PER_SEC / 2 >= clock())
-			return false;
+	if (newState.GetAround(board) > BOARD_STATE::EMPTY) {
+		// if (DropTime + CLOCKS_PER_SEC / 2 >= clock())
+		// 	return false;
 		HoldTrig = 1;
 		TestFull();
+		if (ai.steps.size() != ai.currentStepIndex) {
+			Output::consoleOut << "failed to expect" << std::endl;
+			for (auto var : ai.steps) {
+				Output::consoleOut << var << std::endl;
+			}
+			ai.steps.clear();
+			ai.currentStepIndex = 0;
+		}
 		return true;//바닥에 닿았다면 TestFull() 한 후 TRUE를 리턴한다.
 	}
 	Output::DrawBlock(curState, false);
 	curState = newState;
-	DropTime = clock();
+	//DropTime = clock();
 	Output::DrawBlock(curState, true);
 	return false;
 }
@@ -231,14 +258,14 @@ void Tetris::HoldBrick()
 		curState.index = hbrick;
 		hbrick = temp;
 	}
-	curState.pos = Point(BW / 2, 3);
+	curState = Point(BW / 2, 3);
 	Output::DrawBlock(curState, true);
 }
 
 void Tetris::NewBrick()
 {
 	infoBrickNum++;
-	curState = {{START_X, START_Y}, 0, nbrick};
+	curState = BlockState({START_X, START_Y}, 0, nbrick);
 	nbrick = GetNextBrick();
 	AIInformState();
 }

@@ -167,7 +167,7 @@ void Output::Clear()
 
 std::ostream &operator<<(std::ostream& os, BlockState s)
 {
-	os << s.pos << ' ' << s.rot << ' ' << s.index;
+	os << (Point)s << ' ' << s.rot << ' ' << s.index;
 	return os;
 }
 

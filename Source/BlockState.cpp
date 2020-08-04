@@ -11,7 +11,7 @@ Point BlockState::spinCenter[10] = {
 
 Point BlockState::shape[7][4][4] = {
 	{ {{0,0},{1,0},{2,0},{-1,0}}, {{0,0},{0,1},{0,-1},{0,-2}}, {{0,0},{1,0},{2,0},{-1,0}}, {{0,0},{0,1},{0,-1},{0,-2}} },
-	{ {{0,0},{1,0},{0,1},{1,1}}, {{0,0},{1,0},{0,1},{1,1}}, {{0,0},{1,0},{0,1},{1,1}}, {{0,0},{1,0},{0,1},{1,1}} },
+	{ {{0,0},{1,0},{0,-1},{1,-1}}, {{0,0},{1,0},{0,-1},{1,-1}}, {{0,0},{1,0},{0,-1},{1,-1}}, {{0,0},{1,0},{0,-1},{1,-1}} },
 	{ {{0,0},{-1,0},{0,-1},{1,-1}}, {{0,0},{0,1},{-1,0},{-1,-1}}, {{0,0},{-1,0},{0,-1},{1,-1}}, {{0,0},{0,1},{-1,0},{-1,-1}} },
 	{ {{0,0},{-1,-1},{0,-1},{1,0}}, {{0,0},{-1,0},{-1,1},{0,-1}}, {{0,0},{-1,-1},{0,-1},{1,0}}, {{0,0},{-1,0},{-1,1},{0,-1}} },
 	{ {{0,0},{-1,0},{1,0},{-1,-1}}, {{0,0},{0,-1},{0,1},{-1,1}}, {{0,0},{-1,0},{1,0},{1,1}}, {{0,0},{0,-1},{0,1},{1,-1}} },
@@ -19,29 +19,35 @@ Point BlockState::shape[7][4][4] = {
 	{ {{0,0},{-1,0},{1,0},{0,1}}, {{0,0},{0,-1},{0,1},{1,0}}, {{0,0},{-1,0},{1,0},{0,-1}}, {{0,0},{-1,0},{0,-1},{0,1}} }
 };
 
-BlockState::BlockState(Point p, int r, int i) : pos(p), rot(r), index(i) {}
+BlockState::BlockState(Point p, int r, int i) : Point(p), rot(r), index(i) {}
 
 BlockState BlockState::operator=(const BlockState& b)
 {
-	pos = b.pos;
+	*this = (Point)b;
 	rot = b.rot;
 	index = b.index;
 	return *this;
 }
 
-BlockState BlockState::operator+(const BlockState& b)
+BlockState BlockState::operator=(const Point& p)
+{
+	x = p.x; y = p.y;
+	return *this;
+}
+
+BlockState BlockState::operator+(const BlockState& b) const
 {
     BlockState newState(*this);
-	newState.pos = newState.pos + b.pos;
+	newState = (Point)newState + b;
 	newState.rot = (newState.rot + b.rot + 4) % 4;
 	newState.index = newState.index + b.index;
 	return newState;
 }
 
-BlockState BlockState::operator-(const BlockState& b)
+BlockState BlockState::operator-(const BlockState& b) const
 {
     BlockState newState(*this);
-	newState.pos = newState.pos - b.pos;
+	newState = (Point)newState - b;
 	newState.rot = (newState.rot - b.rot + 4) % 4;
 	newState.index = newState.index - b.index;
 	return newState;
@@ -52,16 +58,26 @@ bool BlockState::operator< (const BlockState b) const
 	return x < b.x;
 }
 
+bool BlockState::operator== (const BlockState b) const
+{
+	return rot == b.rot && index == b.index && (Point)*this == b;
+}
+
+BlockState::operator iiii()
+{
+	return std::tie(x, y, rot, index);
+}
+
 bool BlockState::CheckBoardBoundary(Point p)
 {
-	return 0 < p.x && p.x < 11 && 0 < p.y && p.y < 21;
+	return 0 < p.x && p.x <= BW && 0 < p.y && p.y <= BH;
 }
 
 int BlockState::GetAround(int (* board)[BH + 2])
 {
 	int k = EMPTY;
 	for (int i = 0; i < 4; i++){
-		if (CheckBoardBoundary(GetPos(i))) continue;
+		if (!CheckBoardBoundary(GetPos(i))) return WALL;
 		k = std::max(k, board[GetPos(i).x][GetPos(i).y]);
 	}
 	return k;
@@ -72,23 +88,23 @@ int BlockState::GetAroundSpin(int (* board)[BH + 2], Point& ret)
 	for (int j = 0; j < 10; j++) {
         BlockState newPos = *this + (BlockState)spinCenter[j];
 		if (newPos.GetAround(board) == EMPTY) {
-            ret = newPos.pos;
+            ret = newPos;
 			return EMPTY;
 		}
 	}
-	return !EMPTY;
+	return BRICK;
 }
 
 int BlockState::GetAroundSpinRev(int (* board)[BH + 2], Point& ret)
 {
 	for (int j = 0; j < 10; j++) {
-        BlockState newPos = *this + (BlockState)-spinCenter[j];
-		if (newPos.GetAround(board) == EMPTY) {
-            ret = newPos.pos;
+        BlockState newPos = *this - (BlockState)spinCenter[j];
+		if (newPos.GetAroundSpin(board, ret) == EMPTY && ret == *this) {
+            ret = newPos;
 			return EMPTY;
 		}
 	}
-	return !EMPTY;
+	return BRICK;
 }
 
 Point BlockState::GetShape(int i)
@@ -98,7 +114,7 @@ Point BlockState::GetShape(int i)
 
 Point BlockState::GetPos(int i)
 {
-	return pos + shape[index][rot][i];
+	return (Point)*this + shape[index][rot][i];
 }
 
 Point BlockState::GetBoardPos(int i)

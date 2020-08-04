@@ -2,24 +2,27 @@
 
 #include "Point.hpp"
 #include "Tetris.hpp"
+#include <tuple>
 
-class BlockState{
+using iiii = std::tuple<int&, int&, int&, int&>;
+
+class BlockState : public Point{
 private:
 	static Point spinCenter[10];
 	static Point shape[7][4][4];
 public:
-    Point pos;
     int rot;
     int index;
-    int& x = pos.x;
-    int& y = pos.y;
 
     BlockState(Point p = {0, 0}, int r = 0, int i = 0);
 
     BlockState operator=(const BlockState& b);
-    BlockState operator+(const BlockState& b);
-    BlockState operator-(const BlockState& b);
+    BlockState operator=(const Point& p);
+    BlockState operator+(const BlockState& b) const;
+    BlockState operator-(const BlockState& b) const;
     bool operator< (const BlockState b) const;
+    bool operator== (const BlockState b) const;
+    operator iiii();
 
     bool CheckBoardBoundary(Point p);
     // 벽돌의 이동/회전 가능성 조사(O : EMPTY, X : BRICK)

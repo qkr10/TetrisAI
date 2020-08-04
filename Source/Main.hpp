@@ -19,7 +19,7 @@ public:
     int HoldTrig = 1;
     int DropTime = 1e+10;
     int moveDownTime = 20;
-    int aiMoveTime = 10;
+    int aiMoveTime = 2;
 
     void GameInit();
     void ProcessTimer();

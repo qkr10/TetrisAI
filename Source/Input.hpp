@@ -20,7 +20,8 @@ enum class InputEnum {
 class Input
 {
 public:
-    static InputEnum next;
+    static InputEnum nextAIInput;
+    static InputEnum GetAIInput();
     static InputEnum GetInput();
     static void WaitKeyPress(char ch = 0);
 };

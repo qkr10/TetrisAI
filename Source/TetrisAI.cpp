@@ -4,47 +4,45 @@
 #include <cmath>
 #include <queue>
 #include <tuple>
+#include <fstream>
+#include <iomanip>
 #include "Tetris.hpp"
 #include "Output.hpp"
 
-vp posSteps({
-    {0, -1}, {-1, 0}, {1, 0}
+BlocksState TetrisAI::stepKinds = BlocksState({
+    BlockState({0,  1}, 0, 0), 
+    BlockState({-1, 0}, 0, 0), 
+    BlockState({1,  0}, 0, 0), 
+    BlockState({0,  0}, 1, 0), 
+    BlockState({0,  0}, -1, 0)
 });
-vvvi visitBoard;
 
 /***********************/
 /*      함수 정의      */
 /***********************/
 
-bool TetrisAI::GetPathFromVisit(vvvi& visit, BlockState start, BlockState dest)
+bool TetrisAI::GetPathFromVisit(vvvi& visit, BlockState& start, BlockState& dest)
 {
-    auto [pos, rot, index, x, y] = start;
+    Output::consoleOut << "get path from visit, start : " << start << std::endl;
+    auto [x, y, rot, index] = (iiii)start;
 
-    for (int i = 0; i < posSteps.size(); i++){
-        Point p = pos + posSteps[i];
-        BlockState s = {p, rot, index};
-        if (s.GetAround(board) == BOARD_STATE::EMPTY &&
-            visit[p.x][p.y][rot] == visit[x][y][rot] - 1)
-        {
-            steps.push_back({p, rot, index});
-            if (GetPathFromVisit(visit, {p, rot, index}, dest))
-                return true;
-            steps.pop_back();
-        }
+    if (visit[x][y][rot] == 0) {
+        steps.push_back(BlockState({0, 0}, 0, -2));
+        return true;
     }
 
-    for (int r = 0; r < 4; r++){
-        if (rot == r)
-            continue;
-        BlockState a = start;
-        a.rot = r;
-        Point res;
-        if (a.GetAroundSpinRev(board, res) == BOARD_STATE::EMPTY &&
-            visit[res.x][res.y][r] == visit[x][y][rot] - 1)
+    for (int i = 0; i < stepKinds.size(); i++){
+        BlockState newState = start + stepKinds[i];
+        Point res = newState;
+        int testRet = stepKinds[i].rot == 0 ? newState.GetAround(board) : newState.GetAroundSpin(board, res);
+        newState = res;
+        auto& newStateVisit = visit[newState.x][newState.y][newState.rot];
+        if (testRet == BOARD_STATE::EMPTY &&
+            (newStateVisit == visit[x][y][rot] - 1))
         {
-            a.pos = res;
-            steps.push_back(a);
-            if (GetPathFromVisit(visit, a, dest))
+            auto temp = newStateVisit;
+            steps.push_back(newState);
+            if (GetPathFromVisit(visit, newState, dest))
                 return true;
             steps.pop_back();
         }
@@ -53,54 +51,54 @@ bool TetrisAI::GetPathFromVisit(vvvi& visit, BlockState start, BlockState dest)
     return false;
 }
 
-bool TetrisAI::CalcPath(BlockState dest, int mode)
+bool TetrisAI::CalcPath(BlockState& dest, int mode)
 {
-    auto [pos, rot, index, x, y] = dest;
-    Point startPos = {START_X, START_Y};
-
-    visitBoard.clear();
-    visitBoard.assign(BW + 2, vvi(BH + 2, vi(4, -1)));
-    visitBoard[x][y][rot] = 0;
+    vvvi visitBoard(BW + 2, vvi(BH + 2, vi(4, -1)));
+    visitBoard[dest.x][dest.y][dest.rot] = 0;
 
     using DSPair = std::pair<double, BlockState>;
     using PQ = std::priority_queue<DSPair, std::vector<DSPair>, std::greater<DSPair>>;
     PQ pq;
-    pq.push(DSPair(pos.dist(startPos), dest));
+    BlockState start({START_X, START_Y}, 0, blocksShapeIndex[0]);
+    pq.push(DSPair(dest.dist(start), dest));
 
     while (!pq.empty()){
-        auto [dis, state] = pq.top();
-        auto [pos, rot, index, x, y] = state;
+        DSPair topElement = pq.top();
+        auto [dis, state] = topElement;
+        auto [x, y, rot, index] = (iiii)state;
         pq.pop();
 
-        if (pos == startPos){
-            if (mode != 0)
-                GetPathFromVisit(visitBoard, {startPos, 0, index}, dest);
+        if (state == start){
+            if (mode == 1) {
+                steps.clear();
+                if (!GetPathFromVisit(visitBoard, start, dest)) {
+                    Output::consoleOut << "failed to get path from visit" << std::endl;
+                    Output::consoleOut << "\tdest : " << dest << std::endl;
+                    for (int ir = 0; ir < 4; ir++) {
+                        for (int iy = 0; iy < BH+2; iy++) {
+                            Output::consoleOut << '\t';
+                            for (int ix = 0; ix < BW+2; ix++)
+                                Output::consoleOut << std::setfill(' ') << std::setw(2) << visitBoard[ix][iy][ir];
+                            Output::consoleOut << std::endl;
+                        }
+                        Output::consoleOut << std::endl;
+                    }
+                }
+            }
             return true;
         }
 
-        for (int i = 0; i < posSteps.size(); i++){
-            Point p = pos + posSteps[i];
-            BlockState s = {p, rot, index};
-            if (s.GetAround(board) == BOARD_STATE::EMPTY &&
-                (visitBoard[p.x][p.y][rot] == -1 || visitBoard[p.x][p.y][rot] > visitBoard[x][y][rot]))
+        for (int i = 0; i < stepKinds.size(); i++){
+            BlockState newState = state - stepKinds[i];
+            Point res = newState;
+            int ret = stepKinds[i].rot == 0 ? newState.GetAround(board) : newState.GetAroundSpinRev(board, res);
+            newState = res;
+            auto& newStateVisit = visitBoard[newState.x][newState.y][newState.rot];
+            if (ret == BOARD_STATE::EMPTY &&
+                (newStateVisit == -1 || newStateVisit > visitBoard[x][y][rot]))
             {
-                visitBoard[p.x][p.y][rot] = visitBoard[x][y][rot] + 1;
-                pq.push(DSPair(p.dist(startPos), s));
-            }
-        }
-
-        for (int r = 0; r < 4; r++){
-            if (state.rot == r)
-                continue;
-            BlockState a = state;
-            a.rot = r;
-            Point res;
-            if (a.GetAroundSpinRev(board, res) == BOARD_STATE::EMPTY &&
-                (visitBoard[res.x][res.y][r] == -1 || visitBoard[res.x][res.y][r] > visitBoard[x][y][rot]))
-            {
-                visitBoard[res.x][res.y][r] = visitBoard[x][y][rot] + 1;
-                a.pos = res;
-                pq.push(DSPair(res.dist(startPos), a));
+                newStateVisit = visitBoard[x][y][rot] + 1;
+                pq.push(DSPair(newState.dist(start), newState));
             }
         }
     }
@@ -109,22 +107,19 @@ bool TetrisAI::CalcPath(BlockState dest, int mode)
 
 BlockState TetrisAI::CalcBestState()
 {
-    int count = 0;
-
-    BlockState state = {{1, 1}, 0, blocksShapeIndex[0]};
-    auto& [pos, rot, index, x, y] = state;
+    //후보군(BlocksState states) 정하기
     BlocksState states;
-    for (y = BH; y > 0; y--){
-        for (x = 1; x <= BW; x++){
+    for (int y = BH; y > 0; y--){
+        for (int x = 1; x <= BW; x++){
             if (board[x][y] == BOARD_STATE::BRICK)
                 continue;
 
-            for (rot = 0; rot < 4; rot++){
-                count++;
-                BlockState b = {{x, y + 1}, rot, index};
+            for (int rot = 0; rot < 4; rot++){
+                BlockState state = BlockState({x, y}, rot, blocksShapeIndex[0]);
+                BlockState newState = state + BlockState({0, 1}, 0, 0);
                 if (state.GetAround(board) == BOARD_STATE::EMPTY &&
-                    b.GetAround(board) >= BOARD_STATE::BRICK){
-                    if (CalcPath(state)){
+                    newState.GetAround(board) != BOARD_STATE::EMPTY) {
+                    if (CalcPath(state, 0)){
                         states.push_back(state);
                     }
                 }
@@ -134,18 +129,12 @@ BlockState TetrisAI::CalcBestState()
     if (states.size() == 0)
         return {{-1, -1}, -1, -1};
 
-    Output::consoleOut << "loop count : " << count << std::endl;
-
+    //후보군을 더 나은것 우선으로 정렬
     Point start(START_X, START_Y);
     sort(states.begin(), states.end(), [&](BlockState a, BlockState b)
         {
-            return start.dist(a.pos) > start.dist(b.pos);
+            return start.dist(a) > start.dist(b);
         });
-
-    for (int i = 0; i < states.size(); i++)
-    {
-        Output::consoleOut << states[i] << std::endl;
-    }
 
     return states[0];
 }
@@ -153,19 +142,20 @@ BlockState TetrisAI::CalcBestState()
 void TetrisAI::CalcSteps()
 {
     BlockState dest = CalcBestState();
-
     if (dest.index == -1){
-        steps.clear();
         return;
     }
+    Output::consoleOut << "dest : " << dest << std::endl;
     CalcPath(dest, 1);
     return;
 }
 
 BlockState TetrisAI::GetNextStep(){
-    Output::consoleOut << "index : " << blocksShapeIndex[0] << std::endl;
-    if (steps.size() == currentStepIndex){
+    if (steps.size() <= currentStepIndex){
         CalcSteps();
+        Output::consoleOut << "steps size : " << steps.size() << std::endl;
+        for (auto var : steps)
+            Output::consoleOut << "\tstep : " << var << std::endl;
         currentStepIndex = 0;
     }
     return steps[currentStepIndex++];
