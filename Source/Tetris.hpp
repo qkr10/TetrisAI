@@ -1,19 +1,49 @@
 ﻿#pragma once
 
-enum BOARD_STATE { EMPTY, BRICK, WALL };
+#include "TetrisVariables.hpp"
+#include "TetrisAI.hpp"
+#include "BlockState.hpp"
+#include "Output.hpp"
+#include "Input.hpp"
+#include <vector>
 
-#define delay(n) Sleep(n)							// n/1000초만큼 시간 지연
-#define randomize() srand((unsigned)time(NULL))		// 난수 발생기 초기화
-#define random(n) (rand() % (n))					//0~n까지의 난수 발생
+using vi = std::vector<int>;
+using vvi = std::vector<vi>;
 
-#define HOLD_X 54
-#define HOLD_Y 15
-#define NEXT_X 40
-#define NEXT_Y 15
-#define BX 5
-#define BY 1
-#define BW 10
-#define BH 20
-#define DO_SUFFLE -1
-#define START_X BW / 2
-#define START_Y 3
+class Tetris : public TetrisVariables
+{
+private:
+    int box[7] = { 0, 1, 2, 3, 4, 5, 6 };
+public:
+    TetrisAI ai;
+    Output out;
+    Input in;
+    vvi board;
+    BlockState curState;
+    
+    int hbrick = -1;
+    int nbrick;
+    int infoScore;
+    int infoBrickNum;
+    int HoldTrig = 1;
+    int DropTime = 1e+10;
+    int moveDownTime = 20;
+    int aiMoveTime = 2;
+
+    void TetrisMain();
+    void GameInit();
+    void ProcessTimer();
+    bool ProcessKey();
+    void AINextStep();
+    void AIInformState();
+    bool MoveDown();
+    void TestFull();
+    void HoldBrick();
+    void NewBrick();
+    int GetNextBrick();
+    void Shuffle();
+
+    void Delay(int n) { Sleep(n); }
+    void InitRandom() { srand((unsigned)time(NULL)); }
+    int Random(int n) { return rand() % n; }
+};

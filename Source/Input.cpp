@@ -2,8 +2,6 @@
 #include <conio.h>
 #include <Windows.h> //tolower()
 
-InputEnum Input::nextAIInput = InputEnum::NOINPUT;
-
 InputEnum Input::GetAIInput()
 {
 	auto ret = nextAIInput;

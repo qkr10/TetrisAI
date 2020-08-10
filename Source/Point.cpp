@@ -26,6 +26,14 @@ Point Point::operator-(Point a) const
 {
     return Point(x - a.x, y - a.y);
 }
+Point Point::operator*(Point a) const
+{
+    return Point(a.x * x, a.y * y);
+}
+Point Point::operator/(Point a) const
+{
+    return Point(a.x / x, a.y / y);
+}
 Point Point::operator-() const
 {
     return Point(0, 0) - *this;
@@ -39,4 +47,8 @@ double Point::dist(Point b) const
     int x = this->x - b.x;
     int y = this->y - b.y;
     return sqrt(x * x + y * y);
+}
+bool Point::IsIn(Point a, Point b) const
+{
+    return a.x < x && x < b.x && a.y < y && y < b.y;
 }

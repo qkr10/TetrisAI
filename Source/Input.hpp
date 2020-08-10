@@ -20,8 +20,8 @@ enum class InputEnum {
 class Input
 {
 public:
-    static InputEnum nextAIInput;
-    static InputEnum GetAIInput();
-    static InputEnum GetInput();
-    static void WaitKeyPress(char ch = 0);
+    InputEnum nextAIInput = InputEnum::NOINPUT;
+    InputEnum GetAIInput();
+    InputEnum GetInput();
+    void WaitKeyPress(char ch = 0);
 };

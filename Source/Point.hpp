@@ -13,7 +13,10 @@ public:
     bool operator< (const Point a) const;
     Point operator+(Point a) const;
     Point operator-(Point a) const;
+    Point operator*(Point a) const;
+    Point operator/(Point a) const;
     Point operator-() const;
     operator BlockState() const;
     double dist(Point b) const;
+    bool IsIn(Point a, Point b) const;
 };

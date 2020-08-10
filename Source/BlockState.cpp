@@ -1,6 +1,7 @@
-﻿#include "BlockState.hpp"
-#include "Tetris.hpp"
-#include <algorithm>
+﻿#include <algorithm>
+#include "BlockState.hpp"
+
+#undef max
 
 Point BlockState::spinCenter[10] = {
 	{0, 0},{1, 0},{-1, 0},
@@ -68,22 +69,18 @@ BlockState::operator iiii()
 	return std::tie(x, y, rot, index);
 }
 
-bool BlockState::CheckBoardBoundary(Point p)
-{
-	return 0 < p.x && p.x <= BW && 0 < p.y && p.y <= BH;
-}
-
-int BlockState::GetAround(int (* board)[BH + 2])
+int BlockState::GetAround(vvi &board)
 {
 	int k = EMPTY;
 	for (int i = 0; i < 4; i++){
-		if (!CheckBoardBoundary(GetPos(i))) return WALL;
+		if (!GetPos(i).IsIn(Point(0, 0), TetrisVariables::boardSize + Point(1, 1)))
+			return WALL;
 		k = std::max(k, board[GetPos(i).x][GetPos(i).y]);
 	}
 	return k;
 }
 
-int BlockState::GetAroundSpin(int (* board)[BH + 2], Point& ret)
+int BlockState::GetAroundSpin(vvi &board, Point& ret)
 {
 	for (int j = 0; j < 10; j++) {
         BlockState newPos = *this + (BlockState)spinCenter[j];
@@ -95,7 +92,7 @@ int BlockState::GetAroundSpin(int (* board)[BH + 2], Point& ret)
 	return BRICK;
 }
 
-int BlockState::GetAroundSpinRev(int (* board)[BH + 2], Point& ret)
+int BlockState::GetAroundSpinRev(vvi &board, Point& ret)
 {
 	for (int j = 0; j < 10; j++) {
         BlockState newPos = *this - (BlockState)spinCenter[j];
@@ -115,21 +112,4 @@ Point BlockState::GetShape(int i)
 Point BlockState::GetPos(int i)
 {
 	return (Point)*this + shape[index][rot][i];
-}
-
-Point BlockState::GetBoardPos(int i)
-{
-	return Point(BX + (GetPos(i).x * 2), BY + GetPos(i).y);
-}
-
-Point BlockState::GetHoldPos(int i, int hBrick)
-{
-	BlockState temp = BlockState({0, 0}, 0, hBrick);
-	return Point(HOLD_X + (temp.GetShape(i).x * 2), HOLD_Y + temp.GetShape(i).y);
-}
-
-Point BlockState::GetNextPos(int i, int nBrick)
-{
-	BlockState temp = BlockState({0, 0}, 0, nBrick);
-	return Point(NEXT_X + (temp.GetShape(i).x * 2), NEXT_Y + temp.GetShape(i).y);
 }

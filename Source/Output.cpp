@@ -6,15 +6,6 @@
 #include <fstream>
 #include <string>
 
-char* Output::arTile[4][3] = {
-	{"  ", "■",  "□"},
-	{"ㅁ", "■",  "□"},
-	{"  ", "##", "II"},
-	{"  ", "▣",  "●▣"}
-};
-
-int Output::ttype = 0;
-
 std::ofstream Output::consoleOut("console.txt");
 
 void Output::SetCursorType(int c)
@@ -70,9 +61,10 @@ void Output::DrawHold(int hBrick)
 		}
 	}
 
+	auto temp = BlockState(Point(), 0, hBrick);
 	if (hBrick != -1) {
 		for (int i = 0; i < 4; i++) {
-			gotoxy(BlockState::GetHoldPos(i, hBrick));
+			gotoxy(temp.GetPos(i) * Point(2, 1) + holdLeftTop);
 			puts(arTile[ttype][1]);
 		}
 	}
@@ -87,8 +79,9 @@ void Output::DrawNext(int nBrick)
 		}
 	}
 
+	auto temp = BlockState(Point(), 0, nBrick);
 	for (int i = 0; i < 4; i++) {
-		gotoxy(BlockState::GetNextPos(i, nBrick));
+		gotoxy(temp.GetPos(i) * Point(2, 1) + nextLeftTop);
 		puts(arTile[ttype][1]);
 	}
 }
@@ -96,16 +89,16 @@ void Output::DrawNext(int nBrick)
 void Output::DrawBlock(BlockState curState, bool show)
 {
     for (int i = 0; i < 4; i++){
-        gotoxy(curState.GetBoardPos(i));
+        gotoxy(curState.GetPos(i) * Point(2, 1) + boardLeftTop);
         puts(arTile[ttype][show ? 1 : 0]);
     }
 }
 
-void Output::DrawBoard(int (*board)[BH + 2])
+void Output::DrawBoard(vvi &board)
 {
-	for (int x = 0; x < BW + 2; x++) {
-		for (int y = 0; y < BH + 2; y++) {
-			gotoxy(Point(BX + x * 2, BY + y));
+	for (int x = 0; x < TetrisVariables::boardSize.x + 2; x++) {
+		for (int y = 0; y < TetrisVariables::boardSize.y + 2; y++) {
+			gotoxy(boardLeftTop + Point(x * 2, y));
 			puts(arTile[ttype][board[x][y]]);
 		}
 	}
@@ -119,16 +112,16 @@ void Output::DrawScore(int infoScore, int infoBrickNum)          //점수와 벽
 
 void Output::DrawInfo()
 {
-    gotoxy(Point(35,  2)); puts("뉴 테트리스!");
-	gotoxy(Point(35,  4)); puts("이동 :← →, 회전 :↑, 내림 :↓");
-	gotoxy(Point(35,  5)); puts("전부내림 : space bar, 종료 : ESC");
-	gotoxy(Point(35,  6)); puts("일시정지 : P, 모양바꿈 : Page up,down");
-	gotoxy(Point(35,  7)); puts("홀드 : h ");
-	gotoxy(Point(40, 19)); printf("Next");
-	gotoxy(Point(54, 19)); printf("Hold");
+    gotoxy(Point(35,  2)); puts("테트리스 AI");
+	//gotoxy(Point(35,  4)); puts("이동 :← →, 회전 :↑, 내림 :↓");
+	//gotoxy(Point(35,  5)); puts("전부내림 : space bar, 종료 : ESC");
+	//gotoxy(Point(35,  6)); puts("일시정지 : P, 모양바꿈 : Page up,down");
+	//gotoxy(Point(35,  7)); puts("홀드 : h ");
+	gotoxy(Point(36, 12)); printf("Next");
+	gotoxy(Point(50, 12)); printf("Hold");
 }
 
-void Output::DrawScreen(int (*board)[BH + 2], BlockState& curState, int nbrick, int hbrick, int infoScore, int infoBrickNum)
+void Output::DrawScreen(vvi &board, BlockState& curState, int nbrick, int hbrick, int infoScore, int infoBrickNum)
 {
 	Output::DrawBoard(board);
 	Output::DrawInfo();
@@ -142,7 +135,7 @@ void Output::DrawStart()
 {
     SetCursorType(0);
 	gotoxy(Point(27,  9)); puts("┏━━━━━━━━━━━━━━━━━━━━━━┓");
-	gotoxy(Point(27, 10)); puts("┃      뉴테트리스      ┃");
+	gotoxy(Point(27, 10)); puts("┃      테트리스 AI     ┃");
 	gotoxy(Point(27, 11)); puts("┃                      ┃");
 	gotoxy(Point(27, 12)); puts("┃ 게임시작-> space bar ┃");
 	gotoxy(Point(27, 13)); puts("┗━━━━━━━━━━━━━━━━━━━━━━┛");

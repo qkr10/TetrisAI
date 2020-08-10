@@ -6,7 +6,6 @@
 #include <tuple>
 #include <fstream>
 #include <iomanip>
-#include "Tetris.hpp"
 #include "Output.hpp"
 
 BlocksState TetrisAI::stepKinds = BlocksState({
@@ -53,13 +52,13 @@ bool TetrisAI::GetPathFromVisit(vvvi& visit, BlockState& start, BlockState& dest
 
 bool TetrisAI::CalcPath(BlockState& dest, int mode)
 {
-    vvvi visitBoard(BW + 2, vvi(BH + 2, vi(4, -1)));
+    vvvi visitBoard(TetrisVariables::boardSize.x + 2, vvi(TetrisVariables::boardSize.y + 2, vi(4, -1)));
     visitBoard[dest.x][dest.y][dest.rot] = 0;
 
     using DSPair = std::pair<double, BlockState>;
     using PQ = std::priority_queue<DSPair, std::vector<DSPair>, std::greater<DSPair>>;
     PQ pq;
-    BlockState start({START_X, START_Y}, 0, blocksShapeIndex[0]);
+    BlockState start(TetrisVariables::startCor, 0, blocksShapeIndex[0]);
     pq.push(DSPair(dest.dist(start), dest));
 
     while (!pq.empty()){
@@ -75,9 +74,9 @@ bool TetrisAI::CalcPath(BlockState& dest, int mode)
                     Output::consoleOut << "failed to get path from visit" << std::endl;
                     Output::consoleOut << "\tdest : " << dest << std::endl;
                     for (int ir = 0; ir < 4; ir++) {
-                        for (int iy = 0; iy < BH+2; iy++) {
+                        for (int iy = 0; iy < visitBoard[0].size(); iy++) {
                             Output::consoleOut << '\t';
-                            for (int ix = 0; ix < BW+2; ix++)
+                            for (int ix = 0; ix < visitBoard.size(); ix++)
                                 Output::consoleOut << std::setfill(' ') << std::setw(2) << visitBoard[ix][iy][ir];
                             Output::consoleOut << std::endl;
                         }
@@ -109,8 +108,8 @@ BlockState TetrisAI::CalcBestState()
 {
     //후보군(BlocksState states) 정하기
     BlocksState states;
-    for (int y = BH; y > 0; y--){
-        for (int x = 1; x <= BW; x++){
+    for (int y = TetrisVariables::boardSize.y; y > 0; y--){
+        for (int x = 1; x <= TetrisVariables::boardSize.x; x++){
             if (board[x][y] == BOARD_STATE::BRICK)
                 continue;
 
@@ -130,10 +129,9 @@ BlockState TetrisAI::CalcBestState()
         return {{-1, -1}, -1, -1};
 
     //후보군을 더 나은것 우선으로 정렬
-    Point start(START_X, START_Y);
     sort(states.begin(), states.end(), [&](BlockState a, BlockState b)
         {
-            return start.dist(a) > start.dist(b);
+            return TetrisVariables::startCor.dist(a) > TetrisVariables::startCor.dist(b);
         });
 
     return states[0];
